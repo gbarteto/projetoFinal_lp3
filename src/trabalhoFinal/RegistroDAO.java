@@ -2,10 +2,12 @@ package trabalhoFinal;
 
 import trabalhoFinal.ConexaoDB;
 
+import javax.swing.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,10 +39,14 @@ public class RegistroDAO {
         }
     }
 
+
     public List<Visitante> listarVisitantes() {
         String sql = "SELECT * FROM visitante WHERE data_hora_saida = null";
 
         return new ArrayList<>();
     }
+
+
+
 }
 

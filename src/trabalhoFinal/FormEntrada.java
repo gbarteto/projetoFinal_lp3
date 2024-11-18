@@ -54,7 +54,7 @@
 
             byte[] fotoBytes = null;
             if(fotoBytes != null) {
-                fotoBytes = imageToBytes(image);
+                fotoBytes = Visitante.imageToBytes(image);
             }
             Visitante visitante = new Visitante(nome, rg, foto, motivo, apartamento);
             RegistroDAO registroDAO = new RegistroDAO();
