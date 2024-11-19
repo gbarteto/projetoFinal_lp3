@@ -5,6 +5,7 @@
     import javax.swing.table.DefaultTableModel;
     import java.awt.*;
     import java.awt.image.BufferedImage;
+    import java.io.ByteArrayOutputStream;
     import java.io.IOException;
     import java.time.LocalDateTime;
     import java.util.List;
@@ -32,36 +33,15 @@
         private JPanel pnlAbaHistorico;
         private JLabel lblHistoricoTitle;
         private JTable tblHistorico;
-        private JButton editarButton;
-        private byte[] fotoBytes = null;
+        private JButton btnEditarUsuario;
+        BufferedImage foto;
 
         public FormEntrada() {
+
             btnCadastrar.addActionListener(e -> cadastrarVisita());
             btnCarregarFoto.addActionListener(e -> carregarFoto());
             btnSaida.addActionListener(e -> registrarSaida());
-        }
 
-        public void cadastrarVisita() {
-            String nome = txtNome.getText();
-            String rg = txtRg.getText();
-            String motivo = txtMotivo.getText();
-            String apartamento = txtApartamento.getText();
-
-            if(nome.isEmpty() || rg.isEmpty()) {
-                JOptionPane.showMessageDialog(FormEntrada, "Nome e RG são obrigatórios.");
-                return;
-            }
-
-            byte[] fotoBytes = null;
-            if(fotoBytes != null) {
-                fotoBytes = Visitante.imageToBytes(image);
-            }
-            Visitante visitante = new Visitante(nome, rg, foto, motivo, apartamento);
-            RegistroDAO registroDAO = new RegistroDAO();
-            registroDAO.inserirRegistro(visitante);
-
-            JOptionPane.showMessageDialog(FormEntrada, "Visitante cadastrado com sucesso!");
-            atualizarTabelaVisitas();
         }
 
         private void carregarFoto() {
@@ -80,6 +60,38 @@
                 }
             }
         }
+
+        public void cadastrarVisita() {
+            String nome = txtNome.getText();
+            String rg = txtRg.getText();
+            String motivo = txtMotivo.getText();
+            String apartamento = txtApartamento.getText();
+
+            if(nome.isEmpty() || rg.isEmpty() || motivo.isEmpty() || apartamento.isEmpty()) {
+                JOptionPane.showMessageDialog(FormEntrada, "TODOS os campos são obrigatórios.");
+                return;
+            }
+
+            byte[] fotoBytes = null;
+            try {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(foto, "jpg", baos);
+                fotoBytes = baos.toByteArray();
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(FormEntrada, "Erro ao processar a foto.");
+                return;
+            }
+
+
+
+            Visitante visitante = new Visitante(nome, rg, foto, motivo, apartamento);
+            RegistroDAO registroDAO = new RegistroDAO();
+            registroDAO.inserirRegistro(visitante);
+
+            JOptionPane.showMessageDialog(FormEntrada, "Visitante cadastrado com sucesso!");
+            atualizarTabelaVisitas();
+        }
+
 
         private void registrarSaida() {
             int selectedRow = tblVisitas.getSelectedRow();
@@ -103,8 +115,7 @@
             model.setRowCount(0);  // Limpa a tabela
 
             RegistroDAO registroDAO = new RegistroDAO();
-            List<Visitante> visitantes = registroDAO.listarVisitantes();  // Método que busca do banco
-
+            List<Visitante> visitantes = registroDAO.listarVisitantes();  //Metodo que busca do banco
             for (Visitante visitante : visitantes) {
                 model.addRow(new Object[]{
                         visitante.getNome(),

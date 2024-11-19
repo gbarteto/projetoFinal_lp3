@@ -47,6 +47,31 @@ public class RegistroDAO {
     }
 
 
+    public void registrarSaida(String rg, LocalDateTime horarioSaida) {
+        String sql = "UPDATE visitante SET horario_saida ="+ horarioSaida +"WHERE rg =" + rg + " AND horario_saida IS NULL";
 
+        try (Connection conn = ConexaoDB.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                // Define o valor do horário de saída como um Timestamp
+            stmt.setTimestamp(1, Timestamp.valueOf(horarioSaida));
+
+                // Define o RG como parâmetro da consulta
+            stmt.setString(2, rg);
+
+                // Executa a atualização
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected == 0) {
+                System.out.println("Nenhum registro encontrado para atualizar ou visitante já registrou a saída.");
+            } else {
+                System.out.println("Horário de saída registrado com sucesso para o RG: " + rg);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Erro ao registrar saída: " + e.getMessage());
+        }
+    }
 }
 
