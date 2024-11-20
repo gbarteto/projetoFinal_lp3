@@ -5,6 +5,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -25,6 +27,11 @@ public class Visitante {
         this.motivoVisita = motivoVisita;
         this.apartamentoVisitado = apartamentoVisitado;
         this.dataHoraEntrada = LocalDateTime.now();
+    }
+
+    public Visitante(){}
+
+    public Visitante(String nome, String rg, String motivoVisita, String apartamento) {
     }
 
     public void setDataHoraSaida(LocalDateTime dataHoraSaida) {
@@ -54,6 +61,14 @@ public class Visitante {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public String converteData(){
+        Timestamp horario = new Timestamp(System.currentTimeMillis());
+        SimpleDateFormat formatoSimples = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        String dataFormatada = formatoSimples.format(horario);
+
+        return dataFormatada;
     }
 
     @Override

@@ -7,6 +7,7 @@
     import java.awt.image.BufferedImage;
     import java.io.ByteArrayOutputStream;
     import java.io.IOException;
+    import java.sql.SQLException;
     import java.time.LocalDateTime;
     import java.util.List;
 
@@ -34,13 +35,44 @@
         private JLabel lblHistoricoTitle;
         private JTable tblHistorico;
         private JButton btnEditarUsuario;
-        BufferedImage foto;
+        private BufferedImage foto;
 
         public FormEntrada() {
 
-            btnCadastrar.addActionListener(e -> cadastrarVisita());
+            btnCadastrar.addActionListener(e -> {
+                try {
+                    cadastrarVisita();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+
             btnCarregarFoto.addActionListener(e -> carregarFoto());
-            btnSaida.addActionListener(e -> registrarSaida());
+
+            btnSaida.addActionListener(e -> {
+                try {
+                    registrarSaida();
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+
+            tabbedPane1.addChangeListener(e -> {
+                int TabSelecionado = tabbedPane1.getSelectedIndex();
+                String selectedTabTitle = tabbedPane1.getTitleAt(TabSelecionado);
+
+                // Verifica se a aba de visitantes está ativa
+                if ("Visitantes".equals(selectedTabTitle)) {
+                    try {
+                        atualizarTabelaVisitas();
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            });
+
+            btnEditarUsuario.addActionListener(e ->{});
+            btnSaida.addActionListener(e -> {});
 
         }
 
@@ -50,8 +82,8 @@
 
             if (result == JFileChooser.APPROVE_OPTION) {
                 try {
-                    BufferedImage image = ImageIO.read(fileChooser.getSelectedFile());
-                    ImageIcon icon = new ImageIcon(image.getScaledInstance(lblFoto.getWidth(), lblFoto.getHeight(), Image.SCALE_SMOOTH));
+                    foto = ImageIO.read(fileChooser.getSelectedFile());
+                    ImageIcon icon = new ImageIcon(foto.getScaledInstance(lblFoto.getWidth(), lblFoto.getHeight(), Image.SCALE_SMOOTH));
                     lblFoto.setIcon(icon);
                     // Salve a imagem em uma variável para usar ao salvar no banco de dados
                 } catch (IOException ex) {
@@ -61,7 +93,7 @@
             }
         }
 
-        public void cadastrarVisita() {
+        public void cadastrarVisita() throws SQLException {
             String nome = txtNome.getText();
             String rg = txtRg.getText();
             String motivo = txtMotivo.getText();
@@ -80,9 +112,10 @@
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(FormEntrada, "Erro ao processar a foto.");
                 return;
+            }catch(IllegalArgumentException ex){
+                JOptionPane.showMessageDialog(FormEntrada, "Erro ao blablabla.");
+                return;
             }
-
-
 
             Visitante visitante = new Visitante(nome, rg, foto, motivo, apartamento);
             RegistroDAO registroDAO = new RegistroDAO();
@@ -93,7 +126,7 @@
         }
 
 
-        private void registrarSaida() {
+        private void registrarSaida() throws SQLException {
             int selectedRow = tblVisitas.getSelectedRow();
             if (selectedRow == -1) {
                 JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante na tabela para registrar a saída.");
@@ -110,19 +143,70 @@
             atualizarTabelaVisitas();
         }
 
-        private void atualizarTabelaVisitas() {
-            DefaultTableModel model = (DefaultTableModel) tblVisitas.getModel();
-            model.setRowCount(0);  // Limpa a tabela
+        private void atualizarTabelaVisitas() throws SQLException {
+            // Define o modelo da tabela
+            DefaultTableModel tableModel = new DefaultTableModel(
+                    new Object[]{"Nome", "RG", "Motivo", "Apartamento", "Entrada"}, 0
+            );
+            tblVisitas.setModel(tableModel);
 
+            // Chama o DAO para buscar os dados
             RegistroDAO registroDAO = new RegistroDAO();
-            List<Visitante> visitantes = registroDAO.listarVisitantes();  //Metodo que busca do banco
+            List<Visitante> visitantes = registroDAO.listarVisitantes();
+
+            // Adiciona as linhas na tabela
             for (Visitante visitante : visitantes) {
-                model.addRow(new Object[]{
+                tableModel.addRow(new Object[]{
                         visitante.getNome(),
                         visitante.getRg(),
-                        visitante.getDataHoraEntrada(),
-                        visitante.getApartamentoVisitado()
+                        visitante.getMotivoVisita(),
+                        visitante.getApartamentoVisitado(),
+                        visitante.getDataHoraEntrada()
                 });
+            }
+        }
+
+        public void editarUsuario() throws SQLException {
+            int linhaSelecionada = tblVisitas.getSelectedRow();
+            if (linhaSelecionada == -1){
+                JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante na tabela para editar.");
+                return;
+            }
+
+            String rg = tblVisitas.getValueAt(linhaSelecionada, 1).toString();
+
+            RegistroDAO dao = new RegistroDAO();
+            Visitante visitante = dao.buscarVisitantePorRG(rg);
+
+            if (visitante != null) {
+                // Preencher os campos do formulário
+                txtNome.setText(visitante.getNome());
+                txtRg.setText(visitante.getRg());
+                txtMotivo.setText(visitante.getMotivoVisita());
+                txtApartamento.setText(visitante.getApartamentoVisitado());
+            } else {
+                JOptionPane.showMessageDialog(FormEntrada, "Visitante não encontrado.");
+            }
+        }
+
+        private void salvarAlteracoes() throws SQLException {
+            // Obter os dados dos campos
+            String nome = txtNome.getText();
+            String rg = txtRg.getText();
+            String motivo = txtMotivo.getText();
+            String apartamento = txtApartamento.getText();
+
+            // Atualizar no banco de dados
+            RegistroDAO registroDAO = new RegistroDAO();
+            Visitante visitante = new Visitante();
+
+            boolean sucesso = registroDAO.atualizarVisitante(visitante);
+
+            if (sucesso) {
+                JOptionPane.showMessageDialog(FormEntrada, "Dados atualizados com sucesso.");
+                atualizarTabelaVisitas();
+            } else {
+                JOptionPane.showMessageDialog(FormEntrada, "Erro ao atualizar dados do visitante.");
             }
         }
 
