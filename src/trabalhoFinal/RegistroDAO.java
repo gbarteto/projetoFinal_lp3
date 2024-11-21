@@ -36,7 +36,7 @@ public class RegistroDAO {
     }
 
 
-    public List<Visitante> listarVisitantes() throws SQLException {
+    public static List<Visitante> listarVisitantes() throws SQLException {
         String sql = "SELECT nome, rg, motivo, apartamento_visitado, data_hora_entrada FROM visitantes WHERE data_hora_saida IS NULL";
         List<Visitante> visitantes = new ArrayList<>();
 

@@ -71,8 +71,21 @@
                 }
             });
 
-            btnEditarUsuario.addActionListener(e ->{});
-            btnSaida.addActionListener(e -> {});
+            btnEditarUsuario.addActionListener(e ->{
+                try{
+                    editarVisitante();
+                }catch(SQLException ex){
+                    throw new RuntimeException(ex);
+                }
+            });
+
+            btnSaida.addActionListener(e -> {
+                try{
+                    registrarSaida();
+                }catch(SQLException ex){
+                    throw new RuntimeException(ex);
+                }
+            });
 
         }
 
@@ -166,28 +179,41 @@
             }
         }
 
-        public void editarUsuario() throws SQLException {
-            int linhaSelecionada = tblVisitas.getSelectedRow();
-            if (linhaSelecionada == -1){
-                JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante na tabela para editar.");
+        private void editarVisitante() throws SQLException {
+            int selectedRow = tblVisitas.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante para editar.");
                 return;
             }
 
-            String rg = tblVisitas.getValueAt(linhaSelecionada, 1).toString();
+            // Obter o RG do visitante selecionado
+            String rg = tblVisitas.getValueAt(selectedRow, 1).toString();
 
-            RegistroDAO dao = new RegistroDAO();
-            Visitante visitante = dao.buscarVisitantePorRG(rg);
+            // Buscar o visitante no banco de dados
+            RegistroDAO registroDAO = new RegistroDAO();
+            Visitante visitante = registroDAO.buscarVisitantePorRG(rg);
 
             if (visitante != null) {
-                // Preencher os campos do formulário
-                txtNome.setText(visitante.getNome());
-                txtRg.setText(visitante.getRg());
-                txtMotivo.setText(visitante.getMotivoVisita());
-                txtApartamento.setText(visitante.getApartamentoVisitado());
+                // Abrir o formulário de edição
+                FormEditarVisitante formEditar = new FormEditarVisitante(this, visitante);
+                formEditar.setVisible(true);
+
+                // Verificar se foi salvo
+                if (formEditar.isSalvo()) {
+                    // Atualizar o banco de dados
+                    boolean sucesso = registroDAO.atualizarVisitante(formEditar.getVisitante());
+                    if (sucesso) {
+                        JOptionPane.showMessageDialog(this, "Visitante atualizado com sucesso.");
+                        RegistroDAO.listarVisitantes();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Erro ao atualizar visitante.");
+                    }
+                }
             } else {
-                JOptionPane.showMessageDialog(FormEntrada, "Visitante não encontrado.");
+                JOptionPane.showMessageDialog(this, "Visitante não encontrado.");
             }
         }
+
 
         private void salvarAlteracoes() throws SQLException {
             // Obter os dados dos campos
