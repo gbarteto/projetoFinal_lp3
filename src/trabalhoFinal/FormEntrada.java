@@ -40,7 +40,6 @@
         private BufferedImage foto;
 
         public FormEntrada() {
-
             btnCadastrar.addActionListener(e -> {
                 try {
                     cadastrarVisita();
@@ -105,6 +104,7 @@
 
         }
 
+        //Metodo para realizar upload de foto
         private void carregarFoto() {
             JFileChooser fileChooser = new JFileChooser();
             int result = fileChooser.showOpenDialog(FormEntrada);
@@ -122,11 +122,13 @@
             }
         }
 
+        //Metodo para realizar o cadastro do Visitante
         public void cadastrarVisita() throws SQLException {
             String nome = txtNome.getText();
             String rg = txtRg.getText();
             String motivo = txtMotivo.getText();
             String apartamento = txtApartamento.getText();
+
 
             if(nome.isEmpty() || rg.isEmpty() || motivo.isEmpty() || apartamento.isEmpty()) {
                 JOptionPane.showMessageDialog(FormEntrada, "TODOS os campos são obrigatórios.");
@@ -138,11 +140,8 @@
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(foto, "jpg", baos);
                 fotoBytes = baos.toByteArray();
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 JOptionPane.showMessageDialog(FormEntrada, "Erro ao processar a foto.");
-                return;
-            }catch(IllegalArgumentException ex){
-                JOptionPane.showMessageDialog(FormEntrada, "Erro ao blablabla.");
                 return;
             }
 
@@ -154,24 +153,7 @@
             atualizarTabelaVisitas();
         }
 
-
-        private void registrarSaida() throws SQLException {
-            int selectedRow = tblVisitas.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante na tabela para registrar a saída.");
-                return;
-            }
-
-            String rg = tblVisitas.getValueAt(selectedRow, 1).toString();
-            LocalDateTime horarioSaida = LocalDateTime.now();
-
-            RegistroDAO registroDAO = new RegistroDAO();
-            registroDAO.registrarSaida(rg, horarioSaida);
-
-            JOptionPane.showMessageDialog(FormEntrada, "Saída registrada com sucesso.");
-            atualizarTabelaVisitas();
-        }
-
+        //Metodo para atualizar a tabela de Visitantes que estao dentro do predio
         private void atualizarTabelaVisitas() throws SQLException {
             // Define o modelo da tabela
             DefaultTableModel tableModel = new DefaultTableModel(
@@ -241,26 +223,21 @@
             }
         }
 
-
-        private void salvarAlteracoes() throws SQLException {
-            // Obter os dados dos campos
-            String nome = txtNome.getText();
-            String rg = txtRg.getText();
-            String motivo = txtMotivo.getText();
-            String apartamento = txtApartamento.getText();
-
-            // Atualizar no banco de dados
-            RegistroDAO registroDAO = new RegistroDAO();
-            Visitante visitante = new Visitante();
-
-            boolean sucesso = registroDAO.atualizarVisitante(visitante);
-
-            if (sucesso) {
-                JOptionPane.showMessageDialog(FormEntrada, "Dados atualizados com sucesso.");
-                atualizarTabelaVisitas();
-            } else {
-                JOptionPane.showMessageDialog(FormEntrada, "Erro ao atualizar dados do visitante.");
+        private void registrarSaida() throws SQLException {
+            int selectedRow = tblVisitas.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(FormEntrada, "Selecione um visitante na tabela para registrar a saída.");
+                return;
             }
+
+            String rg = tblVisitas.getValueAt(selectedRow, 1).toString();
+            LocalDateTime horarioSaida = LocalDateTime.now();
+
+            RegistroDAO registroDAO = new RegistroDAO();
+            registroDAO.registrarSaida(rg, horarioSaida);
+
+            JOptionPane.showMessageDialog(FormEntrada, "Saída registrada com sucesso.");
+            atualizarTabelaVisitas();
         }
 
         private void atualizarHistorico() throws SQLException {
