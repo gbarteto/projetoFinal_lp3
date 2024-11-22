@@ -62,14 +62,14 @@ public class RegistroDAO {
         } catch (SQLException e) {
 
             e.printStackTrace();
-            System.out.println("Erro ao registrar saída: " + e.getMessage());
+            System.out.println("Erro ao listar visitantes: " + e.getMessage());
             throw new SQLException();
         }
 
     }
 
     public Visitante buscarVisitantePorRG(String rg) {
-        String sql = "SELECT nome, rg, motivo_visita, apartamento FROM tabela_visitantes WHERE rg = ?";
+        String sql = "SELECT nome, rg, motivo, apartamento_visitado FROM visitantes WHERE rg = ?";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -77,17 +77,49 @@ public class RegistroDAO {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                return new Visitante(
-                        rs.getString("nome"),
+                Visitante visi = new Visitante(rs.getString("nome"),
                         rs.getString("rg"),
-                        rs.getString("motivo_visita"),
-                        rs.getString("apartamento")
-                );
+                        rs.getString("motivo"),
+                        rs.getString("apartamento_visitado"));
+
+                return visi;
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static List<Visitante> listarHistorico() throws SQLException {
+        String sql = "SELECT nome, rg, motivo, apartamento_visitado, data_hora_entrada, data_hora_saida FROM visitantes WHERE data_hora_saida IS NOT NULL";
+        List<Visitante> visitantes = new ArrayList<>();
+
+        try(Connection conn = ConexaoDB.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)){
+
+
+            ResultSet rs = stmt.executeQuery();
+            while(rs.next()) {
+                Visitante visitante = new Visitante();
+                visitante.setNome(rs.getString("nome"));
+                visitante.setRg(rs.getString("rg"));
+                visitante.setMotivoVisita(rs.getString("motivo"));
+                visitante.setApartamentoVisitado(rs.getString("apartamento_visitado"));
+                visitante.setDataHoraEntrada(rs.getTimestamp("data_hora_entrada").toLocalDateTime());
+                visitante.setDataHoraSaida(rs.getTimestamp("data_hora_saida").toLocalDateTime());
+
+                visitantes.add(visitante);
+            }
+
+            return visitantes;
+
+        } catch (SQLException e) {
+
+            e.printStackTrace();
+            System.out.println("Erro ao listar visitantes: " + e.getMessage());
+            throw new SQLException();
+        }
+
     }
 
     public boolean atualizarVisitante(Visitante visitante) {
@@ -96,22 +128,37 @@ public class RegistroDAO {
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            // Preencher parâmetros
             stmt.setString(1, visitante.getNome());
             stmt.setString(2, visitante.getMotivoVisita());
             stmt.setString(3, visitante.getApartamentoVisitado());
             stmt.setString(4, visitante.getRg());
 
+            // Log para debug
+            System.out.println("Executando SQL: " + sql);
+            System.out.println("Parâmetros: ["
+                    + visitante.getNome() + ", "
+                    + visitante.getMotivoVisita() + ", "
+                    + visitante.getApartamentoVisitado() + ", "
+                    + visitante.getRg() + "]");
+
+            // Executar atualização
             int rowsUpdated = stmt.executeUpdate();
+
+            // Log de resultado
+            System.out.println("Linhas atualizadas: " + rowsUpdated);
             return rowsUpdated > 0;
         } catch (SQLException e) {
+            System.err.println("Erro ao atualizar visitante: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
     }
 
 
+
     public void registrarSaida(String rg, LocalDateTime horarioSaida) {
-        String sql = "UPDATE visitante SET horario_saida ="+ horarioSaida +"WHERE rg =" + rg + " AND horario_saida IS NULL";
+        String sql = "UPDATE visitantes SET data_hora_saida = ? WHERE rg = ? AND data_hora_saida IS NULL";
 
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

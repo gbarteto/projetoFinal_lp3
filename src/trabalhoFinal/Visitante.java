@@ -31,7 +31,11 @@ public class Visitante {
 
     public Visitante(){}
 
-    public Visitante(String nome, String rg, String motivoVisita, String apartamento) {
+    public Visitante(String nome, String rg, String motivoVisita, String apartamento){
+        this.nome = nome;
+        this.rg = rg;
+        this.motivoVisita = motivoVisita;
+        this.apartamentoVisitado = apartamento;
     }
 
     public void setDataHoraSaida(LocalDateTime dataHoraSaida) {

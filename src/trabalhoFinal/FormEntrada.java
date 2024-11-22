@@ -9,6 +9,8 @@
     import java.io.IOException;
     import java.sql.SQLException;
     import java.time.LocalDateTime;
+    import java.time.format.DateTimeFormatter;
+    import java.time.format.DateTimeFormatterBuilder;
     import java.util.List;
 
     public class FormEntrada extends JFrame{
@@ -84,6 +86,20 @@
                     registrarSaida();
                 }catch(SQLException ex){
                     throw new RuntimeException(ex);
+                }
+            });
+
+            tabbedPane1.addChangeListener(e -> {
+                int TabSelecionado = tabbedPane1.getSelectedIndex();
+                String selectedTabTitle = tabbedPane1.getTitleAt(TabSelecionado);
+
+                // Verifica se a aba de histórico está ativa
+                if ("Histórico".equals(selectedTabTitle)) {
+                    try {
+                        atualizarHistorico();
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             });
 
@@ -167,14 +183,19 @@
             RegistroDAO registroDAO = new RegistroDAO();
             List<Visitante> visitantes = registroDAO.listarVisitantes();
 
+            //Formatador da data para dd/mm/yy hh:mm:ss
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm:ss");
+
             // Adiciona as linhas na tabela
             for (Visitante visitante : visitantes) {
+                String dataFormatada = visitante.getDataHoraEntrada().format(formatter);
+
                 tableModel.addRow(new Object[]{
                         visitante.getNome(),
                         visitante.getRg(),
                         visitante.getMotivoVisita(),
                         visitante.getApartamentoVisitado(),
-                        visitante.getDataHoraEntrada()
+                        dataFormatada
                 });
             }
         }
@@ -192,6 +213,7 @@
             // Buscar o visitante no banco de dados
             RegistroDAO registroDAO = new RegistroDAO();
             Visitante visitante = registroDAO.buscarVisitantePorRG(rg);
+            System.out.println(visitante.getRg());
 
             if (visitante != null) {
                 // Abrir o formulário de edição
@@ -201,12 +223,17 @@
                 // Verificar se foi salvo
                 if (formEditar.isSalvo()) {
                     // Atualizar o banco de dados
-                    boolean sucesso = registroDAO.atualizarVisitante(formEditar.getVisitante());
-                    if (sucesso) {
-                        JOptionPane.showMessageDialog(this, "Visitante atualizado com sucesso.");
-                        RegistroDAO.listarVisitantes();
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Erro ao atualizar visitante.");
+                    try {
+                        boolean sucesso = registroDAO.atualizarVisitante(formEditar.getVisitante());
+                        if (sucesso) {
+                            atualizarTabelaVisitas();
+                            JOptionPane.showMessageDialog(this, "Visitante atualizado com sucesso.");
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Erro ao atualizar visitante.");
+
+                        }
+                    }catch (SQLException e){
+                        JOptionPane.showMessageDialog(FormEntrada, "Erro ao atualizar visitante." + e.getMessage());
                     }
                 }
             } else {
@@ -233,6 +260,36 @@
                 atualizarTabelaVisitas();
             } else {
                 JOptionPane.showMessageDialog(FormEntrada, "Erro ao atualizar dados do visitante.");
+            }
+        }
+
+        private void atualizarHistorico() throws SQLException {
+            // Define o modelo da tabela
+            DefaultTableModel tableModel = new DefaultTableModel(
+                    new Object[]{"Nome", "RG", "Motivo", "Apartamento", "Entrada", "Saída"}, 0
+            );
+            tblHistorico.setModel(tableModel);
+
+            // Chama o DAO para buscar os dados
+            RegistroDAO registroDAO = new RegistroDAO();
+            List<Visitante> visitantes = RegistroDAO.listarHistorico();
+
+            //Formatador da data para dd/mm/yy hh:mm:ss
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm:ss");
+
+            // Adiciona as linhas na tabela
+            for (Visitante visitante : visitantes) {
+                String dataEntradaFormatada = visitante.getDataHoraEntrada().format(formatter);
+                String dataSaidaFormatada = visitante.getDataHoraSaida().format(formatter);
+
+                tableModel.addRow(new Object[]{
+                        visitante.getNome(),
+                        visitante.getRg(),
+                        visitante.getMotivoVisita(),
+                        visitante.getApartamentoVisitado(),
+                        dataEntradaFormatada,
+                        dataSaidaFormatada
+                });
             }
         }
 
