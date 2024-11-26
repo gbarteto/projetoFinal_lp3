@@ -15,7 +15,8 @@ public class PesquisaCnae {
     private JButton btnPesquisa;
     private JTextField iptPesquisa;
     private JLabel lblPesquisa;
-    private JTextArea textArea1;
+    private JTextArea txtResultado;
+    private JPanel PesquisaCnae;
     private static final String webService = "https://servicodados.ibge.gov.br/api/v2/cnae/classes/";
 
     public PesquisaCnae() {
@@ -29,39 +30,38 @@ public class PesquisaCnae {
     }
 
     private void buscarCnae(String codigoCnae) {
-        try {
-            String urlParaChamada = webService + codigoCnae;
-            URL url = new URL(urlParaChamada);
-            HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+        String codigo = iptPesquisa.getText().trim();
 
-            if (conexao.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                textArea1.setText("Erro na requisição: Código " + conexao.getResponseCode());
-                return;
+        if (codigo.isEmpty()) {
+            JOptionPane.showMessageDialog(PesquisaCnae, "Por favor, insira um código CNAE.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            // Chama a API para buscar o CNAE
+            Cnae cnae = CnaeApiClient.buscaCnae(codigo);
+
+            // Formata o resultado para exibir no JTextArea
+            StringBuilder resultado = new StringBuilder();
+            resultado.append("ID: ").append(cnae.getCodigo()).append("\n");
+            resultado.append("Descrição: ").append(cnae.getDescricao()).append("\n");
+            resultado.append("Grupo: ").append(cnae.getGrupo().getDescricao()).append("\n");
+            resultado.append("Divisão: ").append(cnae.getGrupo().getDivisao().getDescricao()).append("\n");
+            resultado.append("Seção: ").append(cnae.getGrupo().getDivisao().getSecao().getDescricao()).append("\n");
+            resultado.append("Observações:\n");
+            for (String obs : cnae.getObservacoes()) {
+                resultado.append("  - ").append(obs).append("\n");
             }
 
-            BufferedReader resposta = new BufferedReader(new InputStreamReader(conexao.getInputStream()));
-            String jsonEmString = converteJsonEmString(resposta);
-
-            // Desserializa o JSON em um objeto Cnae
-            Gson gson = new Gson();
-            Cnae cnae = gson.fromJson(jsonEmString, Cnae.class);
-
-            // Exibe o resultado na área de texto
-            textArea1.setText("CNAE: " + cnae.getCodigo() + "\n" +
-                    "Descrição: " + cnae.getDescricao());
-
-        } catch (Exception e) {
-            textArea1.setText("Erro: " + e.getMessage());
+            txtResultado.setText(resultado.toString());
+        } catch (Exception ex) {
+            txtResultado.setText("Erro ao buscar o CNAE: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
-    private String converteJsonEmString(BufferedReader resposta) throws Exception {
-        StringBuilder sb = new StringBuilder();
-        String linha;
-        while ((linha = resposta.readLine()) != null) {
-            sb.append(linha);
-        }
-        return sb.toString();
+    public JPanel getPanel(){
+            return PesquisaCnae;
     }
 
 
